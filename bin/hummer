@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require 'hummer/client'
+
+client = Hummer::Client::CLI.new
+client.run
