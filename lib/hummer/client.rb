@@ -1,6 +1,5 @@
 require "hummer/client/version"
-require "hummer/client/cli"
-require "hummer/client/base_command"
+require "hummer/client/command"
 
 module Hummer
   module Client

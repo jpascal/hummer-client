@@ -2,5 +2,5 @@
 
 require 'hummer/client'
 
-client = Hummer::Client::CLI.new
-client.run
+command = Hummer::Client::Command.new
+command.run
