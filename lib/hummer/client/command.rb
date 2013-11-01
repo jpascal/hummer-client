@@ -1,3 +1,4 @@
+require 'terminal-table'
 require 'optparse'
 require 'net/http'
 require 'yaml'
@@ -61,9 +62,15 @@ module Hummer::Client
       API.configure(@options)
       puts "Projects"
       @projects = API.get()
+
+      rows = []
+      rows << ["ID","Name"]
       @projects.each do |project|
-        puts "#{project["id"]} #{project["name"]}"
+        rows << [project["id"],project["name"]]
       end
+      table = Terminal::Table.new :rows => rows
+      puts table
+
       puts "Suites"
       @suites = API.get(:project => "a87439c4-0f29-4aeb-a8fc-a941ec534258", :suite => nil)
       @suites.each do |suite|
@@ -72,6 +79,7 @@ module Hummer::Client
       puts "Suite"
       @suite = API.get(:project => "a87439c4-0f29-4aeb-a8fc-a941ec534258", :suite => "1ee666e5-a9d9-491c-81d3-2e597915b197")
       puts "#{@suite["id"]} #{@suite["build"]}"
+
     end
   end
 end
