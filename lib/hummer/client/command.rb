@@ -23,7 +23,9 @@ module Hummer::Client
       @options = Hash[@options.map{|a| [a.first.to_sym, a.last]}]
 
       parser = OptionParser.new do|opts|
-        opts.banner = "Usage: hummer [options]"
+        opts.banner = "Usage: hummer [options] [command]"
+        opts.separator ""
+        opts.separator "Specific commands: projects suites post"
         opts.separator ""
         opts.separator "Specific options:"
         opts.on('--help', 'Display help' ) do
@@ -44,13 +46,16 @@ module Hummer::Client
         opts.on('--suite ID', 'Suite ID' ) do |id|
           @options[:suite] = id
         end
-        opts.on('--file FILE', 'XML file with test results') do |id|
-          @options[:suite] = id
+        opts.on('--json', 'Output in JSON format' ) do
+          @options[:json] = true
+        end
+        opts.on('--file FILE', 'XML file with test results') do |file|
+          @options[:file] = file
         end
       end
       begin
         parser.parse ARGV
-        if @options[:help]
+        if @options[:help] or ARGV.empty?
           puts parser
           exit(0)
         end
@@ -60,26 +65,47 @@ module Hummer::Client
     end
     def run
       API.configure(@options)
-      puts "Projects"
-      @projects = API.get()
+      command = ARGV.first
+      if "projects" == command
+        @projects = API.get()
+        if @options[:json]
+          puts @projects.inspect
+        else
+          rows = []
+          rows << ["ID","Name"]
+          rows << :separator
+          @projects.each do |project|
+            rows << [project["id"],project["name"]]
+          end
+          table = Terminal::Table.new :rows => rows
+          puts table
+        end
+      elsif "post" == command
+        if @options[:project] and @options[:file]
 
-      rows = []
-      rows << ["ID","Name"]
-      @projects.each do |project|
-        rows << [project["id"],project["name"]]
+        else
+          puts "Need project and file"
+        end
+      elsif "suites" == command
+        if @options.has_key? :project
+          @suites = API.get(:project => @options[:project], :suite => nil)
+          if @options[:json]
+            puts @suites.inspect
+          else
+            rows = []
+            rows << ["ID","Build","Tests","Errors","Failures","Skip","Passed"]
+            rows << :separator
+            @suites.each do |suite|
+              rows << [suite["id"],suite["build"],suite["total_tests"],suite["total_errors"],suite["total_failures"],suite["total_skip"],suite["total_passed"]]
+            end
+            table = Terminal::Table.new :rows => rows
+            puts table
+          end
+        else
+          puts "Need project"
+          exit(1)
+        end
       end
-      table = Terminal::Table.new :rows => rows
-      puts table
-
-      puts "Suites"
-      @suites = API.get(:project => "a87439c4-0f29-4aeb-a8fc-a941ec534258", :suite => nil)
-      @suites.each do |suite|
-        puts "#{suite["id"]} #{suite["build"]}"
-      end
-      puts "Suite"
-      @suite = API.get(:project => "a87439c4-0f29-4aeb-a8fc-a941ec534258", :suite => "1ee666e5-a9d9-491c-81d3-2e597915b197")
-      puts "#{@suite["id"]} #{@suite["build"]}"
-
     end
   end
 end
