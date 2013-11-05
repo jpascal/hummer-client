@@ -72,10 +72,10 @@ module Hummer::Client
           puts @projects.inspect
         else
           rows = []
-          rows << ["ID","Name"]
+          rows << ["ID","Name","Features","Owner"]
           rows << :separator
           @projects.each do |project|
-            rows << [project["id"],project["name"]]
+            rows << [project["id"],project["name"],project["feature_list"].join(", "),project["owner_name"]]
           end
           table = Terminal::Table.new :rows => rows
           puts table
@@ -93,10 +93,10 @@ module Hummer::Client
             puts @suites.inspect
           else
             rows = []
-            rows << ["ID","Build","Tests","Errors","Failures","Skip","Passed"]
+            rows << ["ID","Build","Tests","Errors","Failures","Skip","Passed","Features","Owner"]
             rows << :separator
             @suites.each do |suite|
-              rows << [suite["id"],suite["build"],suite["total_tests"],suite["total_errors"],suite["total_failures"],suite["total_skip"],suite["total_passed"]]
+              rows << [suite["id"],suite["build"],suite["total_tests"],suite["total_errors"],suite["total_failures"],suite["total_skip"],suite["total_passed"],suite["feature_list"].join(", "),suite["user_name"]]
             end
             table = Terminal::Table.new :rows => rows
             puts table
