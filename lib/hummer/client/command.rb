@@ -90,14 +90,6 @@ module Hummer::Client
         else
           puts "Need project and file"
         end
-      elsif "upload" == command
-        if @options.has_key?(:project) and @options.has_key?(:file)
-          @suite = API.post(@options[:project], @options[:file])
-        else
-          puts "Need project and file"
-          exit(1)
-        end
-
       elsif "suites" == command
         if @options.has_key?(:project)
           @suites = API.get(:project => @options[:project], :suite => nil)
