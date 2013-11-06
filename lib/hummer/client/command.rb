@@ -68,7 +68,6 @@ module Hummer::Client
       command = ARGV.first
       if "projects" == command
         @projects = API.get()
-        puts @projects.inspect
         if @projects.kind_of?(Hash) and @projects.has_key?("error")
           puts @projects["error"]
           exit(1)

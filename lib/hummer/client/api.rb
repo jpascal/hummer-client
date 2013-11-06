@@ -1,6 +1,5 @@
 require 'json'
 require 'net/http'
-require 'net/http/post/multipart'
 require 'rest_client'
 
 module Hummer::Client
@@ -23,8 +22,8 @@ module Hummer::Client
         JSON @server['projects'].get
       end
     end
-    def self.post(project,file,build,tags)
-      JSON @server['projects'][project]['suites'].post :tempest => File.open(file), :build => build, :tags => tags
+    def self.post(project,file,build,feature_list)
+      JSON @server['projects'][project]['suites'].post :tempest => File.open(file), :build => build, :feature_list => feature_list
     end
   end
 end
