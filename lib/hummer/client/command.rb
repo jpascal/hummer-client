@@ -3,8 +3,13 @@ require 'optparse'
 require 'yaml'
 require 'readline'
 
+require 'hummer/client/models/base'
+require 'hummer/client/models/project'
+require 'hummer/client/models/suite'
+
 module Hummer::Client
   class Command
+    include Hummer::Client::Model
     def initialize(config = nil)
       @options = {
           :server => "http://0.0.0.0:3000"
@@ -65,6 +70,20 @@ module Hummer::Client
     end
     def run
       API.configure(@options)
+      Base.configure(@options)
+
+      s = Suite.all.first
+      puts "-"
+      puts s.inspect
+      p = s.project
+      puts "-"
+      puts p.inspect
+
+      puts "-"
+      puts p.suites.inspect
+
+      exit
+
       command = ARGV.first
       if "projects" == command
         @projects = API.get()
