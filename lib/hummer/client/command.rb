@@ -1,7 +1,7 @@
 require 'terminal-table'
 require 'optparse'
-require 'net/http'
 require 'yaml'
+require 'readline'
 
 module Hummer::Client
   class Command
@@ -68,6 +68,11 @@ module Hummer::Client
       command = ARGV.first
       if "projects" == command
         @projects = API.get()
+        puts @projects.inspect
+        if @projects.kind_of?(Hash) and @projects.has_key?("error")
+          puts @projects["error"]
+          exit(1)
+        end
         if @options[:json]
           puts @projects.inspect
         else
@@ -82,13 +87,25 @@ module Hummer::Client
         end
       elsif "post" == command
         if @options[:project] and @options[:file]
-
+          API.post(@options[:project], @options[:file], Readline.readline('Build: '), Readline.readline('Tags: '))
         else
           puts "Need project and file"
         end
+      elsif "upload" == command
+        if @options.has_key?(:project) and @options.has_key?(:file)
+          @suite = API.post(@options[:project], @options[:file])
+        else
+          puts "Need project and file"
+          exit(1)
+        end
+
       elsif "suites" == command
-        if @options.has_key? :project
+        if @options.has_key?(:project)
           @suites = API.get(:project => @options[:project], :suite => nil)
+          if @suites.kind_of?(Hash) and @suites.has_key?("error")
+            puts @projects["error"]
+            exit(1)
+          end
           if @options[:json]
             puts @suites.inspect
           else

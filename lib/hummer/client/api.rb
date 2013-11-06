@@ -1,26 +1,30 @@
 require 'json'
+require 'net/http'
+require 'net/http/post/multipart'
+require 'rest_client'
 
 module Hummer::Client
   class API
     def self.configure(options)
-      @options = options
-      @headers = {}
-      @headers["X-User-ID"] = @options[:user]
-      @headers["X-User-Token"] = @options[:token]
-      uri = URI(@options[:server])
-      @server = Net::HTTP.new(uri.host, uri.port)
+      @server = RestClient::Resource.new(options[:server],
+        :headers => {
+          "X-User-ID" => options[:user],
+          "X-User-Token" => options[:token],
+          "Accept" => "application/json"
+        }
+      )
     end
     def self.get(options = {})
       if options.has_key?(:project) and options.has_key?(:suite)
-        JSON @server.get("/api/projects/#{options[:project]}/suites/#{options[:suite]}",@headers).response.body
+        JSON @server['projects'][options[:project]]['suites'][options[:suite]].get
       elsif options.has_key?(:project)
-        JSON @server.get("/api/projects/#{options[:project]}",@headers).response.body
+        JSON @server['projects'][options[:project]]['suites'].get
       else
-        JSON @server.get("/api/projects",@headers).response.body
+        JSON @server['projects'].get
       end
     end
-    def self.post(project,file)
-
+    def self.post(project,file,build,tags)
+      JSON @server['projects'][project]['suites'].post :tempest => File.open(file), :build => build, :tags => tags
     end
   end
 end
