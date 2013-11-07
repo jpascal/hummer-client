@@ -25,11 +25,17 @@ module Hummer::Client::Model
     end
     def self.find(id, resource = nil)
       new(JSON(@@server[resource || @resource][id].get))
+    rescue => e
+      puts "API error: #{e.message}"
+      exit(1)
     end
     def self.all(resource = nil)
       JSON(@@server[resource || @resource].get).collect do |params|
         new(params)
       end
+    rescue => e
+      puts "API error: #{e.message}"
+      exit(1)
     end
     def initialize(params = {})
       params.each do |key, value|

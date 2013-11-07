@@ -3,16 +3,16 @@ require 'optparse'
 require 'yaml'
 require 'readline'
 
-require 'hummer/client/models/base'
-require 'hummer/client/models/project'
-require 'hummer/client/models/suite'
+require 'hummer/client/model'
 
 module Hummer::Client
   class Command
     include Hummer::Client::Model
     def initialize(config = nil)
       @options = {
-          :server => "http://0.0.0.0:3000"
+        :server => "http://0.0.0.0:3000",
+        :user => "00000000-0000-0000-0000-000000000000",
+        :token => ""
       }
       if config
         config = File.expand_path(config)
@@ -30,7 +30,7 @@ module Hummer::Client
       parser = OptionParser.new do|opts|
         opts.banner = "Usage: hummer [options] [command]"
         opts.separator ""
-        opts.separator "Specific commands: projects suites post"
+        opts.separator "Commands: projects suites features post"
         opts.separator ""
         opts.separator "Specific options:"
         opts.on('--help', 'Display help' ) do
@@ -51,15 +51,28 @@ module Hummer::Client
         opts.on('--suite ID', 'Suite ID' ) do |id|
           @options[:suite] = id
         end
+        opts.on('--features NAMEs', 'Feature name, separeted by \',\'' ) do |features|
+          @options[:features] = features
+        end
+        opts.on('--build name', 'Build for new post' ) do |build|
+          @options[:build] = build
+        end
         opts.on('--json', 'Output in JSON format' ) do
           @options[:json] = true
         end
         opts.on('--file FILE', 'XML file with test results') do |file|
           @options[:file] = file
         end
+        opts.on('--version', 'Display version') do
+          @options[:version] = true
+        end
       end
       begin
         parser.parse ARGV
+        if @options[:version]
+          puts "Version: #{Hummer::Client::VERSION}"
+          exit(0)
+        end
         if @options[:help] or ARGV.empty?
           puts parser
           exit(0)
@@ -68,70 +81,65 @@ module Hummer::Client
         puts e.message
       end
     end
-    def run
-      API.configure(@options)
-      Base.configure(@options)
-
-      s = Suite.all.first
-      puts "-"
-      puts s.inspect
-      p = s.project
-      puts "-"
-      puts p.inspect
-
-      puts "-"
-      puts p.suites.inspect
-
-      exit
-
-      command = ARGV.first
-      if "projects" == command
-        @projects = API.get()
-        if @projects.kind_of?(Hash) and @projects.has_key?("error")
-          puts @projects["error"]
-          exit(1)
-        end
-        if @options[:json]
-          puts @projects.inspect
-        else
-          rows = []
-          rows << ["ID","Name","Features","Owner"]
-          rows << :separator
-          @projects.each do |project|
-            rows << [project["id"],project["name"],project["feature_list"].join(", "),project["owner_name"]]
-          end
-          table = Terminal::Table.new :rows => rows
-          puts table
-        end
-      elsif "post" == command
-        if @options[:project] and @options[:file]
-          API.post(@options[:project], @options[:file], Readline.readline('Build: '), Readline.readline('Tags: '))
-        else
-          puts "Need project and file"
-        end
-      elsif "suites" == command
-        if @options.has_key?(:project)
-          @suites = API.get(:project => @options[:project], :suite => nil)
-          if @suites.kind_of?(Hash) and @suites.has_key?("error")
-            puts @projects["error"]
-            exit(1)
-          end
-          if @options[:json]
-            puts @suites.inspect
+    def display(objects, titles)
+      objects = objects.kind_of?(Array) ? objects : objects.to_a
+      rows = []
+      rows << titles.collect{|_,title| title }
+      rows << :separator
+      objects.each do |object|
+        values = []
+        titles.collect{|key,_| key}.each do |attribute|
+          value = object.send(attribute)
+          if value.kind_of?(Array)
+            values << value.join(", ")
           else
-            rows = []
-            rows << ["ID","Build","Tests","Errors","Failures","Skip","Passed","Features","Owner"]
-            rows << :separator
-            @suites.each do |suite|
-              rows << [suite["id"],suite["build"],suite["total_tests"],suite["total_errors"],suite["total_failures"],suite["total_skip"],suite["total_passed"],suite["feature_list"].join(", "),suite["user_name"]]
-            end
-            table = Terminal::Table.new :rows => rows
-            puts table
+            values << value
           end
-        else
-          puts "Need project"
-          exit(1)
         end
+        rows << values
+      end
+      puts Terminal::Table.new :rows => rows
+    end
+    def run
+      Base.configure(@options)
+      command = ARGV.first
+      case command
+        when "features" then
+          display Feature.all, [[:id,"ID"],[:name, "Name"]]
+        when "projects" then
+          display Project.all, [[:id,"ID"],[:name,"Name"],[:feature_list,"Features"],[:owner_name,"Owner"]]
+        when "suites" then
+          if @options[:project]
+            project = Project.find(@options[:project])
+            suites = project.suites
+          else
+            suites = Suite.all
+          end
+          display suites, [[:id,"ID"],[:build,"Build"],[:feature_list,"Features"],[:user_name,"User"],[:total_tests, "Tests"],[:total_errors, "Errors"],[:total_failures, "Failures"],[:total_skip,"Skip"],[:total_passed,"Passed"]]
+        when "post" then
+          project = @options[:project]
+          unless project
+            project = Readline.readline('Project> ')
+            project = Project.find(project.strip)
+          end
+          build = @options[:build]
+          unless build
+            build = Readline.readline('Build> ')
+          end
+          features = @options[:features]
+          unless features
+            puts "Already exists features: #{Feature.all.collect{|f| f.name}.join(", ")}"
+            puts "Default features: #{project.feature_list.join(", ")}"
+            features = Readline.readline('Features> ')
+          end
+          file = @options[:file]
+          unless file
+            file = Readline.readline('File> ')
+          end
+          Suite.save(project.id, build, features, file)
+        else
+          puts "Unknown command: #{command}"
+          exit(1)
       end
     end
   end
