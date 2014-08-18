@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "hummer-client"
   spec.version       = Hummer::Client::VERSION
   spec.authors       = ["Evgeniy Shurmin "]
-  spec.email         = ["eshurmin@mirantis.com"]
+  spec.email         = ["eshurmin@gmail.com"]
   spec.description   = %q{Client for Hummer server}
   spec.summary       = %q{Client for Hummer server}
   spec.homepage      = ""
